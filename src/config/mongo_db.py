@@ -11,7 +11,9 @@ app_name = os.getenv("MONGODB_APPNAME")
 cluster_name = os.getenv("MONGODB_CLUSTER")
 uri = f"mongodb+srv://{user_name}:{password}@{cluster_name}.lzb32h6.mongodb.net/?retryWrites=true&w=majority&appName={app_name}"
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
+client = None
+if(not client):
+    client = MongoClient(uri, server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
 try:
     # client.admin.command('ping')

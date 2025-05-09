@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from chatbot import indexing
+from src.model.retrieval import indexing
+from src.model.graph import graph 
 from typing import List
 import asyncio
 
@@ -28,15 +29,19 @@ app.add_middleware(
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/")
-async def request_message(msg: Message):
-    return {msg.message}
-
 @app.get("/document")
 async def get_document():
     return "hello world"
 
 @app.post("/document")
 async def get_document(request:ListDocuments):
-    asyncio.create_task(indexing.add_documents(request.documents))
+    try:
+        asyncio.create_task(indexing.add_documents(request.documents))
+    except Exception as e:
+        return e
     return "upload successfully"
+
+@app.post("/message")
+async def get_message(request: Message):
+    asyncio.create_task(graph.invoke({"question" : request.message}))
+    return "ok"
