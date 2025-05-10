@@ -6,9 +6,9 @@ import umap
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from sklearn.mixture import GaussianMixture
-
+from langchain_huggingface import HuggingFaceEmbeddings
 RANDOM_SEED = 224  # Fixed seed for reproducibility
-
+embd = HuggingFaceEmbeddings(model_name = "all-MPNet-base-v2")
 ### --- Code from citations referenced above (added comments and docstrings) --- ###
 
 
@@ -39,7 +39,10 @@ def global_cluster_embeddings(
 
 
 def local_cluster_embeddings(
-    embeddings: np.ndarray, dim: int, num_neighbors: int = 10, metric: str = "cosine"
+    embeddings: np.ndarray, 
+    dim: int, num_neighbors: 
+    int = 10, 
+    metric: str = "cosine"
 ) -> np.ndarray:
     """
     Perform local dimensionality reduction on the embeddings using UMAP, typically after global clustering.
@@ -323,8 +326,10 @@ def recursive_embed_cluster_summarize(
     results = {}  # Dictionary to store results at each level
 
     # Perform embedding, clustering, and summarization for the current level
+    
     df_clusters, df_summary = embed_cluster_summarize_texts(texts, level)
-
+    print(level)
+    print(df_clusters)
     # Store the results of the current level
     results[level] = (df_clusters, df_summary)
 

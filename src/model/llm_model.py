@@ -28,5 +28,5 @@ def llm (messages :BasePromptTemplate,type:str = "inference"):
             messages=[formatted_messages]
         ) 
     except Exception as e:
-        print(e)
-        return e
+        print({"error": str(e)})
+        return {"error": str(e)}

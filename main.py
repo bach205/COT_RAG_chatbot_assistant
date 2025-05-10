@@ -5,6 +5,10 @@ from src.model.retrieval import indexing
 from src.model.graph import graph 
 from typing import List
 import asyncio
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 class Message(BaseModel):
     message: str
@@ -38,10 +42,13 @@ async def get_document(request:ListDocuments):
     try:
         asyncio.create_task(indexing.add_documents(request.documents))
     except Exception as e:
-        return e
+        return {"error": str(e)}
     return "upload successfully"
 
 @app.post("/message")
 async def get_message(request: Message):
-    asyncio.create_task(graph.invoke({"question" : request.message}))
-    return "ok"
+    try:
+        a = graph.invoke({"question" : request.message})
+    except Exception as e:
+        return {"error": str(e)}
+    return a
