@@ -3,7 +3,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from src.config.mongo_db import client
 import os
 from src.utils.preprocessing.indexing import IndexingDocuments
-
+from src.utils.preprocessing.raptor import RaptorChunker
 
 #cac mo hinh can tai ve tu hugging face
 huggingface_model_name = "meta-llama/Llama-3.2-1B-Instruct"
@@ -14,7 +14,9 @@ ATLAS_VECTOR_SEARCH_INDEX_NAME = "vector_search_index"
 
 
 embeddings = HuggingFaceEmbeddings(model_name = embedding_model_name)
-text_splitter = SemanticChunker(embeddings=embeddings,buffer_size=3)
+# text_splitter = SemanticChunker(embeddings=embeddings,buffer_size=3)
+text_splitter = RaptorChunker(embd=embeddings,chunker=SemanticChunker(embeddings=embeddings,buffer_size=3))
+#class that init vector_store instance
 indexing = IndexingDocuments(model_name=huggingface_model_name,
                              embeddings=embeddings,
                              database_client=client,

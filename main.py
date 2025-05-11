@@ -40,7 +40,7 @@ async def get_document():
 @app.post("/document")
 async def get_document(request:ListDocuments):
     try:
-        asyncio.create_task(indexing.add_documents(request.documents))
+        asyncio.create_task(await indexing.add_documents(request.documents))
     except Exception as e:
         return {"error": str(e)}
     return "upload successfully"
