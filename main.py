@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from src.model.retrieval import indexing
-from src.model.graph import graph 
+
 from typing import List
-import asyncio
+from src.Controllers import messagesController
+from src.Controllers import documentsController
 from dotenv import load_dotenv
 
 
@@ -29,26 +29,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+#test api
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
+#test api
 @app.get("/document")
 async def get_document():
     return "hello world"
 
+#send document to the chatbot (one at a time if use raptor for mor efficiently)
 @app.post("/document")
 async def get_document(request:ListDocuments):
     try:
-        asyncio.create_task(await indexing.add_documents(request.documents))
+        result = documentsController.get_documents(request.documents)
     except Exception as e:
-        return {"error": str(e)}
+        return {"e" : str(e)}
     return "upload successfully"
 
 @app.post("/message")
+
+#send message to the chatbot and then receive message back from chatbot
 async def get_message(request: Message):
     try:
-        a = graph.invoke({"question" : request.message})
+        result = messagesController.receive_messages(request.message)
     except Exception as e:
         return {"error": str(e)}
-    return a
+    return result

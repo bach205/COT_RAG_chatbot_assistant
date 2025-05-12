@@ -1,23 +1,18 @@
 from typing import Dict, List, Optional, Tuple, Iterable
-import asyncio
+
 import numpy as np
 import pandas as pd
 import umap
-from langchain_experimental.text_splitter import SemanticChunker
+
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 from sklearn.mixture import GaussianMixture
+from langchain_huggingface import HuggingFaceEmbeddings
 import copy
-from src.model.llm_model import pipe_runnable
 class RaptorChunker():
-    def __init__(self,embd,chunker):
-        self.embd = embd,
-        if(chunker == None):
-            self.chunker = SemanticChunker(embeddings=embd,buffer_size=3)
-        else:
-            self.chunker = chunker
-
+    def __init__(self,embd):
+        self.embd = embd
 
     ### --- Code from citations referenced above (added comments and docstrings) --- ###
 
@@ -49,9 +44,9 @@ class RaptorChunker():
 
 
     def local_cluster_embeddings(self,
-        embeddings: np.ndarray, 
-        dim: int, num_neighbors: 
-        int = 10, 
+        embeddings: np.ndarray,
+        dim: int, num_neighbors:
+        int = 10,
         metric: str = "cosine"
     ) -> np.ndarray:
         """
@@ -245,7 +240,7 @@ class RaptorChunker():
         return "--- --- \n --- --- ".join(unique_txt)
 
 
-    async def embed_cluster_summarize_texts(self,
+    def embed_cluster_summarize_texts(self,
         texts: List[str], level: int
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -287,12 +282,12 @@ class RaptorChunker():
         print(f"--Generated {len(all_clusters)} clusters--")
 
         # Summarization
-        template = """Here is a sub-set of LangChain Expression Language doc. 
-        
+        template = """Here is a sub-set of LangChain Expression Language doc.
+
         LangChain Expression Language provides a way to compose chain in LangChain.
-        
+
         Give a detailed summary of the documentation provided.
-        
+
         Documentation:
         {context}
         answer:
@@ -301,13 +296,11 @@ class RaptorChunker():
         chain = prompt | pipe_runnable | StrOutputParser() | (lambda x: x.split("answer:")[1].strip())
 
         # Format text within each cluster for summarization
-        join_documents_by_cluster = []
         summaries = []
         for i in all_clusters:
-            df_cluster = expanded_df[expanded_df["cluster"] == i]
-            formatted_txt = self.fmt_txt(df_cluster)
-            join_documents_by_cluster.append(formatted_txt)
-        summaries = await asyncio.gather(*(chain.ainvoke(i) for i in join_documents_by_cluster))
+          df_cluster = expanded_df[expanded_df["cluster"] == i]
+          formatted_txt = self.fmt_txt(df_cluster)
+          summaries.append(chain.invoke({"context": formatted_txt}))
 
         # Create a DataFrame to store summaries with their corresponding cluster and level
         df_summary = pd.DataFrame(
@@ -321,7 +314,7 @@ class RaptorChunker():
         return df_clusters, df_summary
 
 
-    async def recursive_embed_cluster_summarize(self,
+    def recursive_embed_cluster_summarize(self,
         texts: List[str], level: int = 1, n_levels: int = 3
     ) -> Dict[int, Tuple[pd.DataFrame, pd.DataFrame]]:
         """
@@ -341,8 +334,8 @@ class RaptorChunker():
         results = {}  # Dictionary to store results at each level
 
         # Perform embedding, clustering, and summarization for the current level
-        
-        df_clusters, df_summary = await self.embed_cluster_summarize_texts(texts, level)
+
+        df_clusters, df_summary = self.embed_cluster_summarize_texts(texts, level)
         # Store the results of the current level
         results[level] = (df_clusters, df_summary)
 
@@ -351,7 +344,7 @@ class RaptorChunker():
         if level < n_levels and unique_clusters > 1:
             # Use summaries as the input texts for the next level of recursion
             new_texts = df_summary["summaries"].tolist()
-            next_level_results = await self.recursive_embed_cluster_summarize(
+            next_level_results = self.recursive_embed_cluster_summarize(
                 new_texts, level + 1, n_levels
             )
 
@@ -359,10 +352,10 @@ class RaptorChunker():
             results.update(next_level_results)
 
         return results
-    async def create_documents(self,texts : List[str],metadatas : List[str]) -> List[Document]:
+    def create_documents(self,texts : List[str],metadatas : List[str]) -> List[Document]:
       print("creating document....")
       documents = []
-      raptor_texts = await self.recursive_embed_cluster_summarize(texts)
+      raptor_texts = self.recursive_embed_cluster_summarize(texts)
       for key,value in raptor_texts.items():
         df_documents_summaries = value[1]
         for index,row in df_documents_summaries.iterrows():
@@ -372,12 +365,13 @@ class RaptorChunker():
           document = Document(page_content=row["summaries"],metadata = metadata)
           documents.append(document)
       return documents
-    async def split_documents(self,documents: Iterable[Document]) -> List[Document]:
+    
+    def split_documents(self,documents: Iterable[Document]) -> List[Document]:
       print("spliting documents...")
-      chunks = self.chunker.split_documents(documents)
       texts = []
       metadatas = []
-      for doc in chunks:
+      for doc in documents:
        texts.append(doc.page_content)
        metadatas.append(doc.metadata)
-      return await self.create_documents(texts,metadatas)
+      return self.create_documents(texts,metadatas)
+

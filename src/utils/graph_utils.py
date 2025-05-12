@@ -2,7 +2,7 @@ from typing_extensions import List, TypedDict
 from langchain_core.documents import Document
 from src.model.llm_model import llm,pipe_runnable
 from langchain_community.tools import TavilySearchResults
-from src.model.retrieval import indexing
+from src.config.vector_store import vector_store
 from langchain import hub
 import os
 
@@ -16,6 +16,7 @@ class State(TypedDict):
     answer: str
     isMissingDocs : str
 
+#tavily use to search web 
 tool = TavilySearchResults(
     max_results=5,
     include_answer=True,
@@ -25,6 +26,8 @@ tool = TavilySearchResults(
     # include_domains = []
     # exclude_domains = []
 )
+
+#format response when use tavily to search
 def format_response_from_web_search(messages):
     result = []
     for sub_messages in messages:
@@ -38,11 +41,17 @@ def format_response_from_web_search(messages):
     return result
 
 def retrieve(state: State):
+    """
+    find docs with similarity score larger than 0.8
+
+    ------------------
+    return 
+    """
     # retrieved_docs = indexing.vector_store.similarity_search(state["question"])
     # return {"context": retrieved_docs}
     print("retrieving......")
     threshold = 0.8  # Ngưỡng điểm similarity
-    docs_with_scores = indexing.vector_store.similarity_search_with_score(state["question"], k=10)
+    docs_with_scores = vector_store.similarity_search_with_score(state["question"], k=10)
     # Lọc các document có điểm >= threshold
     filtered_docs = [doc for doc, score in docs_with_scores if score >= threshold]
     is_missing_docs = "false"
@@ -52,6 +61,7 @@ def retrieve(state: State):
         is_missing_docs = "true"
     print(is_missing_docs)
     return {"context": filtered_docs,"isMissingDocs":is_missing_docs}
+
 def generate(state: State):
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])
     messages = prompt.invoke({"question": state["question"], "context": docs_content})
@@ -63,6 +73,7 @@ def generate(state: State):
     return result
     # response = llm.invoke(messages)
     # return {"answer": response}
+    
 def search_web(state: State):
     print("compile search_web_node")
     external_source = tool.invoke(state["question"])
