@@ -1,15 +1,15 @@
 from typing import Dict, List, Optional, Tuple, Iterable
-
+import asyncio
 import numpy as np
 import pandas as pd
 import umap
-
+from langchain_experimental.text_splitter import SemanticChunker
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 from sklearn.mixture import GaussianMixture
-from langchain_huggingface import HuggingFaceEmbeddings
 import copy
+from src.model.llm_model import pipe_runnable
 class RaptorChunker():
     def __init__(self,embd):
         self.embd = embd
@@ -374,4 +374,5 @@ class RaptorChunker():
        texts.append(doc.page_content)
        metadatas.append(doc.metadata)
       return self.create_documents(texts,metadatas)
+
 
